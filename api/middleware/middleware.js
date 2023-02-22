@@ -1,45 +1,47 @@
 const users = require("./../users/users-model");
 
 function logger(req, res, next) {
-  console.log(`${new Date()} --- ${req.url}`);
+  const method = req.method;
+  const url = req.originalUrl;
+  const timeStamp = new Date().toLocaleString();
+
+  console.log(method, "--", url, "--", timeStamp);
+
   next();
 }
 
-function validateUserId(req, res, next) {
-  const { id } = req.params;
-  console.log("user id: ", id);
-  const user = users.getById(id);
-
-  if (user) {
-    console.log("Kullanıcı var");
-    next();
-  } else {
-    console.log("Böyle bir ID yok");
-    next({ message: "Talep edilen bilgilerde hata var" });
+async function validateUserId(req, res, next) {
+  try {
+    let existUser = await users.getById(req.params.id);
+    if (!existUser) {
+      res.status(404).json({ message: "not found" });
+    } else {
+      req.user = existUser;
+      next();
+    }
+  } catch (error) {
+    res.status(500).json({ message: "hata oluştu" });
   }
 }
 
 function validateUser(req, res, next) {
   // SİHRİNİZİ GÖRELİM
-  const newUser = req.body.name;
-  console.log(newUser);
-  if (newUser) {
-    console.log(" kullanıcı ismi bulunuyor");
-    next();
+  const { name } = req.body;
+  if (!name) {
+    res.status(400).json({ message: "gerekli name alanı eksik" });
   } else {
-    console.log(" kullanıcı ismi girilmedi");
-    next({ message: "Kullanıcı ismi girilmedi" });
+    req.name = name;
+    next();
   }
 }
 
 function validatePost(req, res, next) {
-  const text = req.body.text;
-  if (text) {
-    console.log("text, body içerisinde mevcut");
-    next();
+  const { text } = req.body;
+  if (!text) {
+    res.status(400).json({ message: "gerekli text alanı eksik" });
   } else {
-    console.log("text, body içerisinde yok");
-    next({ mesaj: "gerekli text alanı eksik" });
+    req.text = text;
+    next();
   }
 }
 
